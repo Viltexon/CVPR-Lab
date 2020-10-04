@@ -3,20 +3,68 @@ import numpy as np
 import time
 import csv
 
+dataSet = 3
+descriptor_n = 2
+
+if dataSet == 1:
+    img_path = "img"
+    img_positive = 100
+    img_negative = 20
+    if descriptor_n == 1:   # best 72/70
+        distance_p = 0.75
+        matches_threshold = 4
+        nfeatures_orb = 7000
+    if descriptor_n == 2:   # best 71/65
+        distance_p = 0.81
+        matches_threshold = 1
+    csv_dataSet = "stand"
+
+if dataSet == 2:
+    img_path = "img2"
+    img_positive = 102
+    img_negative = 18
+    if descriptor_n == 1:   # best 76/89
+        distance_p = 0.75
+        matches_threshold = 4
+        nfeatures_orb = 7000
+    if descriptor_n == 2:   # best 71/78
+        distance_p = 0.81
+        matches_threshold = 1
+    csv_dataSet = "CarModel"
+
+if dataSet == 3:
+    img_path = "img3"
+    img_positive = 94
+    img_negative = 20
+    if descriptor_n == 1:   # best 70/60
+        distance_p = 0.75
+        matches_threshold = 7
+        nfeatures_orb = 5000
+    if descriptor_n == 2:   # best 61/70
+        distance_p = 0.72
+        matches_threshold = 4
+    csv_dataSet = "calculator"
+
+
 images = []
 
-img0 = cv2.imread("img/0.jpg", cv2.IMREAD_COLOR)
-
-img_positive = 100
-img_negative = 20
+img0 = cv2.imread(img_path + "/0.jpg", cv2.IMREAD_COLOR)
 
 for i in range(1, img_positive + img_negative + 1):
-    img = cv2.imread(f'img/{i}.jpg', cv2.IMREAD_COLOR)
+    img = cv2.imread(img_path + f'/{i}.jpg', cv2.IMREAD_COLOR)
     images.append(img)
 
-orb = cv2.ORB_create(nfeatures=5000)    # vary
 
-key0, disc0 = orb.detectAndCompute(img0, None)
+if descriptor_n == 1:
+    csv_descriptor = "ORB"
+    descriptor = cv2.ORB_create(nfeatures=nfeatures_orb)
+
+if descriptor_n == 2:
+    csv_descriptor = "AKAZE"
+    descriptor = cv2.AKAZE_create()
+
+
+key0, disc0 = descriptor.detectAndCompute(img0, None)
 
 
 csv_columns = ['Matches', 'MeanDist', 'Size', 'Time']
@@ -27,16 +75,16 @@ for img in images:
     matches_data = 0
     mean_data = None
 
-    key_orb, disc_orb = orb.detectAndCompute(img, None)
+    key_1, disc_1 = descriptor.detectAndCompute(img, None)
 
-    if disc_orb is not None:
+    if disc_1 is not None:
 
         bf = cv2.BFMatcher()
-        matches = bf.knnMatch(disc0, disc_orb, k=2)
+        matches = bf.knnMatch(disc0, disc_1, k=2)
 
         goodMatches = []
         for m, n in matches:
-            if m.distance < 0.75 * n.distance:  # vary
+            if m.distance < distance_p * n.distance:
                 goodMatches.append(m)
 
         end_t = time.time()
@@ -44,7 +92,7 @@ for img in images:
         if len(goodMatches):
 
             sourcePoints = np.float32([key0[m.queryIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
-            destinationPoints = np.float32([key_orb[m.trainIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
+            destinationPoints = np.float32([key_1[m.trainIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
 
             M, mask = cv2.findHomography(sourcePoints, destinationPoints, method=cv2.RANSAC, ransacReprojThreshold=5.0)
             matchesMask = mask.ravel().tolist()
@@ -53,7 +101,7 @@ for img in images:
 
             matches_data = len(matchesFinal) / len(goodMatches)
 
-            if len(matchesFinal) > 4:    # vary
+            if len(matchesFinal) > matches_threshold:
                 mean_data = np.average([x.distance for x in matchesFinal])
             else:
                 mean_data = None
@@ -83,7 +131,7 @@ print("Correct positive: ", correct_positive/img_positive)
 print("Correct negative: ", correct_negative/img_negative)
 
 
-csv_file = "csv/results.csv"
+csv_file = "csv/results_" + csv_descriptor + "_" + csv_dataSet + ".csv"
 try:
     with open(csv_file, 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=csv_columns, lineterminator = '\n')
