@@ -7,7 +7,7 @@ images = []
 
 img0 = cv2.imread("img/0.jpg", cv2.IMREAD_COLOR)
 
-for i in range(1, 26):  # 0-24
+for i in range(1, 101):  # 0-99
     img = cv2.imread(f'img/{i}.jpg', cv2.IMREAD_COLOR)
     images.append(img)
 
@@ -24,13 +24,41 @@ for img in images:
 
     key_orb, disc_orb = orb.detectAndCompute(img, None)
 
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    matches = bf.match(disc0, disc_orb)
+    bf = cv2.BFMatcher()
+    matches = bf.knnMatch(disc0, disc_orb, k=2)
+
+    goodMatches = []
+    for m, n in matches:
+        if m.distance < 0.8 * n.distance:  # vary
+            goodMatches.append(m)
 
     end_t = time.time()
 
-    matches_data = len(matches)/len(disc_orb)
-    mean_data = np.average([x.distance for x in matches])
+    if len(goodMatches) > 0:
+
+        sourcePoints = np.float32([key0[m.queryIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
+        destinationPoints = np.float32([key_orb[m.trainIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
+
+        M, mask = cv2.findHomography(sourcePoints, destinationPoints, method=cv2.RANSAC, ransacReprojThreshold=5.0)
+        matchesMask = mask.ravel().tolist()
+
+        matchesFinal = []
+        for i, match in zip(matchesMask, goodMatches):
+            if i:
+                matchesFinal.append(match)
+
+        matches_data = len(matchesFinal) / len(goodMatches)
+
+        if len(matchesFinal):
+            mean_data = np.average([x.distance for x in matchesFinal])
+        else:
+            mean_data = None
+
+    else:
+
+        matches_data = 0
+        mean_data = None
+
     size_data = img.shape[0]*img.shape[1]
     time_data = end_t - start_t
 
