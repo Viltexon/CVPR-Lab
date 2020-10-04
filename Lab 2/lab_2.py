@@ -7,7 +7,10 @@ images = []
 
 img0 = cv2.imread("img/0.jpg", cv2.IMREAD_COLOR)
 
-for i in range(1, 101):  # 0-99
+img_positive = 100
+img_negative = 20
+
+for i in range(1, img_positive + img_negative + 1):
     img = cv2.imread(f'img/{i}.jpg', cv2.IMREAD_COLOR)
     images.append(img)
 
@@ -21,43 +24,42 @@ results = []
 
 for img in images:
     start_t = time.time()
+    matches_data = 0
+    mean_data = None
 
     key_orb, disc_orb = orb.detectAndCompute(img, None)
 
-    bf = cv2.BFMatcher()
-    matches = bf.knnMatch(disc0, disc_orb, k=2)
+    if disc_orb is not None:
 
-    goodMatches = []
-    for m, n in matches:
-        if m.distance < 0.8 * n.distance:  # vary
-            goodMatches.append(m)
+        bf = cv2.BFMatcher()
+        matches = bf.knnMatch(disc0, disc_orb, k=2)
 
-    end_t = time.time()
+        goodMatches = []
+        for m, n in matches:
+            if m.distance < 0.7 * n.distance:  # vary
+                goodMatches.append(m)
 
-    if len(goodMatches) > 0:
+        end_t = time.time()
 
-        sourcePoints = np.float32([key0[m.queryIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
-        destinationPoints = np.float32([key_orb[m.trainIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
+        if len(goodMatches) > 0:
 
-        M, mask = cv2.findHomography(sourcePoints, destinationPoints, method=cv2.RANSAC, ransacReprojThreshold=5.0)
-        matchesMask = mask.ravel().tolist()
+            sourcePoints = np.float32([key0[m.queryIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
+            destinationPoints = np.float32([key_orb[m.trainIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
 
-        matchesFinal = []
-        for i, match in zip(matchesMask, goodMatches):
-            if i:
-                matchesFinal.append(match)
+            M, mask = cv2.findHomography(sourcePoints, destinationPoints, method=cv2.RANSAC, ransacReprojThreshold=5.0)
+            matchesMask = mask.ravel().tolist()
 
-        matches_data = len(matchesFinal) / len(goodMatches)
+            matchesFinal = [a for a, b in zip(goodMatches, matchesMask) if b]
 
-        if len(matchesFinal):
-            mean_data = np.average([x.distance for x in matchesFinal])
-        else:
-            mean_data = None
+            matches_data = len(matchesFinal) / len(goodMatches)
+
+            if len(matchesFinal):
+                mean_data = np.average([x.distance for x in matchesFinal])
+            else:
+                mean_data = None
 
     else:
-
-        matches_data = 0
-        mean_data = None
+        end_t = time.time()
 
     size_data = img.shape[0]*img.shape[1]
     time_data = end_t - start_t
@@ -65,6 +67,20 @@ for img in images:
     data = {'Matches': matches_data, 'MeanDist': mean_data, 'Size': size_data, 'Time': time_data}
 
     results.append(data)
+    print(len(results), " - ", data['Matches'] != 0)
+
+correct_positive = 0
+for index in range(0, img_positive):
+    if results[index]['Matches'] != 0:
+        correct_positive += 1
+
+correct_negative = 0
+for index in range(img_positive, img_positive + img_negative):
+    if results[index]['Matches'] == 0:
+        correct_negative += 1
+
+print("Correct positive: ", correct_positive/img_positive)
+print("Correct negative: ", correct_negative/img_negative)
 
 
 csv_file = "csv/results.csv"
