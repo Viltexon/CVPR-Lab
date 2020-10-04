@@ -36,12 +36,12 @@ for img in images:
 
         goodMatches = []
         for m, n in matches:
-            if m.distance < 0.7 * n.distance:  # vary
+            if m.distance < 0.75 * n.distance:  # vary
                 goodMatches.append(m)
 
         end_t = time.time()
 
-        if len(goodMatches) > 0:
+        if len(goodMatches):
 
             sourcePoints = np.float32([key0[m.queryIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
             destinationPoints = np.float32([key_orb[m.trainIdx].pt for m in goodMatches]).reshape(-1, 1, 2)
@@ -53,7 +53,7 @@ for img in images:
 
             matches_data = len(matchesFinal) / len(goodMatches)
 
-            if len(matchesFinal):
+            if len(matchesFinal) > 4:    # vary
                 mean_data = np.average([x.distance for x in matchesFinal])
             else:
                 mean_data = None
@@ -67,16 +67,16 @@ for img in images:
     data = {'Matches': matches_data, 'MeanDist': mean_data, 'Size': size_data, 'Time': time_data}
 
     results.append(data)
-    print(len(results), " - ", data['Matches'] != 0)
+    print(len(results), " - ", data['MeanDist'] is not None)
 
 correct_positive = 0
 for index in range(0, img_positive):
-    if results[index]['Matches'] != 0:
+    if results[index]['MeanDist'] is not None:
         correct_positive += 1
 
 correct_negative = 0
 for index in range(img_positive, img_positive + img_negative):
-    if results[index]['Matches'] == 0:
+    if results[index]['MeanDist'] is None:
         correct_negative += 1
 
 print("Correct positive: ", correct_positive/img_positive)
