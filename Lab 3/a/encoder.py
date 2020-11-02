@@ -140,8 +140,8 @@ while vid.isOpened():
         break
 
 times = round(time.time() - start_time, 0)
-print(f"time of decoding: {times // 60} minutes {times % 60} seconds")
-print(f"mean difference between original and genereted frames: {round(difference/count, 4)}")
+print(f"time of encoding: {times // 60} minutes {times % 60} seconds")
+print(f"mean difference between original and generated frames: {round(difference/count, 4)}")
 
 
 vid.release()
