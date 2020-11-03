@@ -41,7 +41,7 @@ print(f"time of decoding: {times // 60} minutes {times % 60} seconds")
 
 output_size = frame.shape[:2][::-1]
 fourcc = cv2.VideoWriter_fourcc(*'FMP4')
-fps = 50     # Hm hm
+fps = 25     # Hm hm
 out = cv2.VideoWriter('decoded.avi', fourcc, fps, output_size)
 for frame in images_arr:
     out.write(frame)

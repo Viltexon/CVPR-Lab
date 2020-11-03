@@ -29,10 +29,10 @@ def get_diamond(S):
         vectors.append([vectors[-1][0]-1, vectors[-1][1]+1])
     for i in range(S):
         vectors.append([vectors[-1][0]-1, vectors[-1][1]-1])
-    for i in range(S):
-        vectors.append([vectors[-1][0]+1, vectors[-1][1]-1])
-    for i in range(S-1):
-        vectors.append([vectors[-1][0]+1, vectors[-1][1]+1])
+    # for i in range(S):
+    #     vectors.append([vectors[-1][0]+1, vectors[-1][1]-1])
+    # for i in range(S-1):
+    #     vectors.append([vectors[-1][0]+1, vectors[-1][1]+1])
 
     return vectors
 
@@ -69,8 +69,8 @@ def bias_algorithm(bias, first, second, height, width):
             smol_diamond_vectors = [[1, 0], [0, 1], [-1, 0], [0, -1]]
 
             center_diff = min_diff
-            for k in range(3):
-            # while True:
+            # for k in range(3):
+            while True:
 
                 y = i*BS+ imin
                 x = j*BS+ jmin

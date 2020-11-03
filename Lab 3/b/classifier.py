@@ -19,14 +19,11 @@ if descriptor_n == 1:
 if descriptor_n == 2:
     # distance_p = 0.75
     # MIN_MATCH_COUNT = 2
-    nfeatures = 500    # why?
+    nfeatures = 500    # why? how? what for?
     pog = 61
     descriptor = cv2.AKAZE_create(threshold=0.002)
 
 
-# мы обучаем на всех дескрипторах, или же только на хороших?
-# если на всех то BFMatcher как и эталонные изображения нам по сути не нужны
-# но и размерность тогда будет уф...
 # def add_sample(d, matches):
 #     goodMatches = []
 #     for m, n in matches:
@@ -65,7 +62,7 @@ for i in range(121):
         # data = add_sample(d, matches)
         # train_data.append(data)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(min(len(d), len(dest_matches))):     # smaller
+        for j in range(min(len(d), len(dest_matches))):
             dest_matches[j, :] = d[j, :]
         train_data.append(dest_matches.ravel() / 256)
         if i <= 102:
@@ -84,7 +81,7 @@ for i in range(121):
         # data = add_sample(d, matches)
         # train_data.append(data)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(min(len(d), len(dest_matches))):     # smaller
+        for j in range(min(len(d), len(dest_matches))):
             dest_matches[j, :] = d[j, :]
         train_data.append(dest_matches.ravel() / 256)
         if i <= 100:
@@ -103,7 +100,7 @@ for i in range(121):
         # data = add_sample(d, matches)
         # train_data.append(data)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(min(len(d), len(dest_matches))):     # smaller
+        for j in range(min(len(d), len(dest_matches))):
             dest_matches[j, :] = d[j, :]
         train_data.append(dest_matches.ravel() / 256)
         if i <= 94:
@@ -129,6 +126,7 @@ print(X_test.shape)
 clf = AdaBoostClassifier(n_estimators=400)
 
 clf.fit(X_train, Y_train)
+# clf.fit(train_data, y)
 # scores = cross_val_score(clf, train_data, y, cv=5)
 # print(scores.mean())
 
@@ -214,10 +212,10 @@ output_size = (640, 480)
 while cap.isOpened():
     ret, frame = cap.read()
     if ret:
-        # try:
+
         k, d = descriptor.detectAndCompute(frame, None)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(min(len(d), len(dest_matches))):  # smaller
+        for j in range(min(len(d), len(dest_matches))):
             dest_matches[j, :] = d[j, :]
         x_data = dest_matches.ravel() / 256
 
@@ -232,11 +230,7 @@ while cap.isOpened():
             obj = "nothing"
 
         cv2.putText(frame, obj, (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
-        # except:
-        #     cv2.putText(frame, "none", (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
-        #     print("min_match_count")
 
-        # cv2.imshow('frame', frame)
         output_im = cv2.resize(frame, output_size)
         images_arr.append(output_im)
 
