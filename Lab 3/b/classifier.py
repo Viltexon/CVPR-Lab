@@ -19,9 +19,9 @@ if descriptor_n == 1:
 if descriptor_n == 2:
     # distance_p = 0.75
     # MIN_MATCH_COUNT = 2
-    nfeatures = 3000    # why?
+    nfeatures = 500    # why?
     pog = 61
-    descriptor = cv2.AKAZE_create(threshold=0.001)
+    descriptor = cv2.AKAZE_create(threshold=0.002)
 
 
 # мы обучаем на всех дескрипторах, или же только на хороших?
@@ -65,7 +65,7 @@ for i in range(121):
         # data = add_sample(d, matches)
         # train_data.append(data)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(len(d)):     # smaller
+        for j in range(min(len(d), len(dest_matches))):     # smaller
             dest_matches[j, :] = d[j, :]
         train_data.append(dest_matches.ravel() / 256)
         if i <= 102:
@@ -84,7 +84,7 @@ for i in range(121):
         # data = add_sample(d, matches)
         # train_data.append(data)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(len(d)):     # smaller
+        for j in range(min(len(d), len(dest_matches))):     # smaller
             dest_matches[j, :] = d[j, :]
         train_data.append(dest_matches.ravel() / 256)
         if i <= 100:
@@ -103,7 +103,7 @@ for i in range(121):
         # data = add_sample(d, matches)
         # train_data.append(data)
         dest_matches = np.zeros((nfeatures, pog))
-        for j in range(len(d)):     # smaller
+        for j in range(min(len(d), len(dest_matches))):     # smaller
             dest_matches[j, :] = d[j, :]
         train_data.append(dest_matches.ravel() / 256)
         if i <= 94:
@@ -138,10 +138,12 @@ print(f"time of learning: {times // 60} minutes {times % 60} seconds")
 
 ########################
 
+# TP:
 t1 = 0
 t2 = 0
 t3 = 0
 t4 = 0
+# (TP + FP):
 a1 = 0
 a2 = 0
 a3 = 0
@@ -154,7 +156,6 @@ for i in range(X_test.shape[0]):
 
     yt = Y_test[i]
 
-    # TODO FP & FN
     if yp == yt == 1:
         t1 += 1
     elif yp == yt == 2:
@@ -173,21 +174,31 @@ for i in range(X_test.shape[0]):
     elif yp == 0:
         a4 += 1
 
-
+# P:
 sY = [0, 0, 0, 0]
 sY[0] = np.count_nonzero(Y_test == 1)
 sY[1] = np.count_nonzero(Y_test == 2)
 sY[2] = np.count_nonzero(Y_test == 3)
 sY[3] = np.count_nonzero(Y_test == 0)
-print(f"detected car:\t\t{t1/sY[0]}")
-print(f"detected stand:\t\t{t2/sY[1]}")
-print(f"detected dosimeter:\t{t3/sY[2]}")
-print(f"nothing detected:\t{t4/sY[3]}\n")
+# TPR = TP/P
+print(f"TPR car:\t\t{t1/sY[0]}")
+print(f"TPR stand:\t\t{t2/sY[1]}")
+print(f"TPR dosimeter:\t{t3/sY[2]}")
+print(f"TPR nothing:\t{t4/sY[3]}\n")
 
-print(f"false positive car:\t{(a1 - t1)/a1}")
-print(f"false positive stand:\t{(a2 - t2)/a2}")
-print(f"false positive dosimeter:{(a3 - t3)/a3}")
-print(f"false negative:\t\t{(a4 - t4)/a4}\n")   # false positive nothing
+# FNR = 1 - TPR
+print(f"FNR car:\t\t{1 - t1/sY[0]}")
+print(f"FNR stand:\t\t{1 - t2/sY[1]}")
+print(f"FNR dosimeter:\t{1 - t3/sY[2]}")
+print(f"FNR nothing:\t{1 - t4/sY[3]}\n")
+
+# All = P + N
+All = X_test.shape[0]
+# FPR = FP/N = ((TP + FP) - TP)/(All - P)
+print(f"FPR car:\t\t{(a1 - t1)/(All - sY[0])}")
+print(f"FPR stand:\t\t{(a2 - t2)/(All - sY[1])}")
+print(f"FPR dosimeter:\t{(a3 - t3)/(All - sY[2])}")
+print(f"FPR nothing:\t{(a4 - t4)/(All - sY[3])}\n")
 
 print(f"mean time:\t\t{times/X_test.shape[0]}s")
 
