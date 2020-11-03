@@ -190,3 +190,57 @@ print(f"false positive dosimeter:{(a3 - t3)/a3}")
 print(f"false negative:\t\t{(a4 - t4)/a4}\n")   # false positive nothing
 
 print(f"mean time:\t\t{times/X_test.shape[0]}s")
+
+########################
+
+cap = cv2.VideoCapture('skl.mp4')
+
+images_arr = []
+
+font = cv2.FONT_HERSHEY_SIMPLEX
+output_size = (640, 480)
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if ret:
+        # try:
+        k, d = descriptor.detectAndCompute(frame, None)
+        dest_matches = np.zeros((nfeatures, pog))
+        for j in range(min(len(d), len(dest_matches))):  # smaller
+            dest_matches[j, :] = d[j, :]
+        x_data = dest_matches.ravel() / 256
+
+        yp = clf.predict(np.expand_dims(x_data, axis=0))
+        if yp == 1:
+            obj = "car"
+        elif yp == 2:
+            obj = "stand"
+        elif yp == 3:
+            obj = "dosimeter"
+        elif yp == 0:
+            obj = "nothing"
+
+        cv2.putText(frame, obj, (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
+        # except:
+        #     cv2.putText(frame, "none", (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
+        #     print("min_match_count")
+
+        # cv2.imshow('frame', frame)
+        output_im = cv2.resize(frame, output_size)
+        images_arr.append(output_im)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    else:
+        break
+
+
+fourcc = cv2.VideoWriter_fourcc(*'FMP4')
+fps = 24
+out = cv2.VideoWriter('output.avi', fourcc, fps, output_size)
+for frame in images_arr:
+    out.write(frame)
+
+cap.release()
+out.release()
+cv2.destroyAllWindows()
