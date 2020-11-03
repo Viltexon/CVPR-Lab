@@ -212,24 +212,26 @@ output_size = (640, 480)
 while cap.isOpened():
     ret, frame = cap.read()
     if ret:
+        try:
+            k, d = descriptor.detectAndCompute(frame, None)
+            dest_matches = np.zeros((nfeatures, pog))
+            for j in range(min(len(d), len(dest_matches))):
+                dest_matches[j, :] = d[j, :]
+            x_data = dest_matches.ravel() / 256
 
-        k, d = descriptor.detectAndCompute(frame, None)
-        dest_matches = np.zeros((nfeatures, pog))
-        for j in range(min(len(d), len(dest_matches))):
-            dest_matches[j, :] = d[j, :]
-        x_data = dest_matches.ravel() / 256
+            yp = clf.predict(np.expand_dims(x_data, axis=0))
+            if yp == 1:
+                obj = "car"
+            elif yp == 2:
+                obj = "stand"
+            elif yp == 3:
+                obj = "dosimeter"
+            elif yp == 0:
+                obj = "nothing"
 
-        yp = clf.predict(np.expand_dims(x_data, axis=0))
-        if yp == 1:
-            obj = "car"
-        elif yp == 2:
-            obj = "stand"
-        elif yp == 3:
-            obj = "dosimeter"
-        elif yp == 0:
-            obj = "nothing"
-
-        cv2.putText(frame, obj, (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(frame, obj, (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
+        except:
+            cv2.putText(frame, "none", (10, 50), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
 
         output_im = cv2.resize(frame, output_size)
         images_arr.append(output_im)
