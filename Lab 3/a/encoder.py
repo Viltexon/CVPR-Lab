@@ -127,7 +127,7 @@ while vid.isOpened():
             first = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
             second = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
-            bias = findbias(second, first)
+            bias = findbias(first, second)
             newframe = buildFrame(frame1, bias)
             difference += mad(frame2, newframe)
             count += 1
