@@ -4,7 +4,6 @@ import cv2
 import time
 
 vid = cv2.VideoCapture('input.avi')
-file = open('encoded.npy', 'wb')
 
 BS = 20  # block size
 LDSP_Step = 3  # LDSP Step
@@ -116,46 +115,58 @@ def mad(a, b):
 difference = 0
 count = 0
 
+images_arr = []
+
 start_time = time.time()
 while vid.isOpened():
     ret, frame1 = vid.read()
     if ret:
-        # if count == 0:
-        #     np.save(file, frame1)
+        if count == 0:
+            images_arr.append(frame1)
 
+        count += 1
         ret, frame2 = vid.read()
         if ret:
-            np.save(file, frame1)
 
             first = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
             second = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
             bias = findbias(second, first)
-            # newframe = buildFrame(frame1, bias)
-            # difference += mad(frame2, newframe)
-            count += 1
-            np.save(file, bias)
+            newframe = buildFrame(images_arr[-1], bias)
+            images_arr.append(newframe)
+            p = 0.1
 
             ret, frame3 = vid.read()
             if ret:
                 third = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
                 bias = findbias(second, third)
-                count += 1
-                np.save(file, bias)
+
+                if count % 60:
+                    p = (1 - np.sin(1 / (count % 60) * np.pi / 2)) * p
+                f = ((frame1.astype('float') * p) + newframe.copy().astype('float').copy() * (1 - p))
+                f = np.clip(f, 0, 254).astype(np.uint8)
+                newframe = buildFrame(f, bias)
+                images_arr.append(newframe)
             else:
                 break
 
         else:
-            np.save(file, frame1)
+            images_arr.append(frame1)
             break
     else:
         break
 
 times = round(time.time() - start_time, 0)
 print(f"time of encoding: {times // 60} minutes {times % 60} seconds")
-# print(f"mean difference between original and generated frames: {round(difference/count, 4)}")
 
 
+output_size = frame1.shape[:2][::-1]
+fourcc = cv2.VideoWriter_fourcc(*'FMP4')
+fps = 20     # Hm hm
+out = cv2.VideoWriter('decoded.avi', fourcc, fps, output_size)
+for frame in images_arr:
+    out.write(frame)
+
+out.release()
 vid.release()
-file.close()
 cv2.destroyAllWindows()
